@@ -187,6 +187,11 @@ class HapiSetup:
         args.extend(['stop', 'janusgraph'])
         return self.compose(args)
 
+    def janusgraph_config(self):
+        args = []
+        args.extend(['stop', 'janusgraph'])
+        return self.compose(args)
+
     def janusgraph_rm(self):
         args = []
         args.extend(['rm', '-f', 'janusgraph'])

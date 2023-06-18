@@ -21,7 +21,7 @@ cli = typer.Typer(rich_markup_mode="markdown")
 def hapisetup(
         profiles: Annotated[str, typer.Option(envvar='HS_PROFILES')] = '',
         no_profiles: Annotated[bool, typer.Option('--no_profiles')] = False,
-        build_docker_image: Annotated[bool, typer.Option('--build-docker-image')] = False,
+        build_docker_image: Annotated[bool, typer.Option('--build-docker-image')] = True,
         build_hapi: Annotated[bool, typer.Option('--build-hapi')] = False,
         no_out: Annotated[bool, typer.Option('--no-out')] = False,
         no_err: Annotated[bool, typer.Option('--no-err')] = False,
@@ -96,8 +96,7 @@ def down():
 
 @cli.command(name='compose', context_settings=dict(
     ignore_unknown_options=True,
-    allow_extra_args=True,
-))
+    allow_extra_args=True), add_help_option=False)
 # @click.pass_context
 def hs_compose(ctx: Annotated[typer.Context, typer.Argument()]):
     """Simply runs docker compose with the command line args specified."""

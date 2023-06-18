@@ -129,6 +129,10 @@ services:
       - hs-janus
     build:
       context: ${HS_JANUSGRAPH_IMAGE_DIR:?err}
+      args:
+        - USERID=${HS_UID:?err}
+        - GROUPID=${HS_GID:?err}
+    user: ${HS_UID:?err}:${HS_GID:?err}
     env_file:
       - service/janusgraph/default.env
       - service/janusgraph/project.env
@@ -137,11 +141,21 @@ services:
       - target: 8182
         host_ip: ${HS_JANUSGRAPH_HOST:?err}
         published: ${HS_JANUSGRAPH_PORT:?err}
-    healthcheck:
-      test: [ "CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy" ]
-      interval: 10s
-      timeout: 30s
-      retries: 3
+#    healthcheck:
+#      test: [ "CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy" ]
+#      interval: 10s
+#      timeout: 30s
+#      retries: 3
+    volumes:
+      - type: bind
+        source: ${HS_JANUSGRAPH_SERVICE_DIR:?err}/mounts/config
+        target: /etc/opt/janusgraph
+      - type: bind
+        source: ${HS_JANUSGRAPH_SERVICE_DIR:?err}/mounts/data
+        target: /var/lib/janusgraph
+      - type: bind
+        source: ${HS_JANUSGRAPH_SERVICE_DIR:?err}/mounts/initdb.d
+        target: /docker-entrypoint-initdb.d
 
   cassandra:
     profiles:

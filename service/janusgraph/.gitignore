@@ -1,2 +1,3 @@
 local.env
-mounts/data/
+mounts/data*
+!mounts/data/.keep
