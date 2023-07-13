@@ -101,8 +101,12 @@ services:
     depends_on: # See https://github.com/docker/compose/issues/9795
       postgresql:
         condition: service_healthy  # The waiting for availability also happens in setup/docker_image/_hapi_default/copy/usr/local/bin/hapisetup-hapi-run
+      #required: false
       elasticsearch:
         condition: service_healthy
+      #required: false
+      hapi-build:
+        condition: service_completed_successfully
     stop_grace_period: 10s
     build:
       context: ${HS_HAPI_IMAGE_DIR:?err}
@@ -122,7 +126,6 @@ services:
       - type: bind
         source: ${HS_HAPI_SERVICE_DIR:?err}/mounts/workdir
         target: /hapi
-#
 
   janusgraph:
     profiles:
@@ -141,11 +144,11 @@ services:
       - target: 8182
         host_ip: ${HS_JANUSGRAPH_HOST:?err}
         published: ${HS_JANUSGRAPH_PORT:?err}
-#    healthcheck:
-#      test: [ "CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy" ]
-#      interval: 10s
-#      timeout: 30s
-#      retries: 3
+    #    healthcheck:
+    #      test: [ "CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy" ]
+    #      interval: 10s
+    #      timeout: 30s
+    #      retries: 3
     volumes:
       - type: bind
         source: ${HS_JANUSGRAPH_SERVICE_DIR:?err}/mounts/config

@@ -10,5 +10,5 @@
 /hapi/elasticsearch-curl.txt
 
 bin/tmp-*
-
+tmp/
 bin/.git-last-head
