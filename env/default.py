@@ -89,7 +89,7 @@ environ['HS_HAPI_BUILD_DOWNLOAD_URL'] = environ.get('HS_HAPI_BUILD_DOWNLOAD_URL'
 # type git repo and ref
 environ['HS_HAPI_BUILD_GIT_REPO'] = environ.get('HS_HAPI_BUILD_GIT_REPO',
                                                 'https://github.com/hapifhir/hapi-fhir-jpaserver-starter.git')
-environ['HS_HAPI_BUILD_GIT_REF'] = environ.get('HS_HAPI_BUILD_GIT_REF', 'refs/tags/v6.4.0')
+environ['HS_HAPI_BUILD_GIT_REF'] = environ.get('HS_HAPI_BUILD_GIT_REF', 'refs/tags/v6.6.0')
 
 # type source and path
 environ['HS_HAPI_BUILD_SOURCE_PATH'] = environ.get('HS_HAPI_BUILD_SOURCE_PATH', '')

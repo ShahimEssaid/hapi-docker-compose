@@ -1,2 +1,3 @@
 .idea/
-hapisetup.egg-info/
+/setupservice.egg-info/
+/src/hapisetup.egg-info/
