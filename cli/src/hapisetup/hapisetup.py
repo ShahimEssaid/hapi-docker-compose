@@ -48,7 +48,7 @@ class HapiSetup:
     def reset(self, **kwargs):
         self.down()
         if kwargs['pg']:
-            self.postgresql_reset()
+            self.postgres_reset()
         if kwargs['es']:
             self.elasticsearch_reset()
         if kwargs['hapi_target']:
@@ -69,25 +69,25 @@ class HapiSetup:
     # Postgresql commands
     # =========================
 
-    def postgresql_up(self):
+    def postgres_up(self):
         args = []
         args.extend(['up'])
         self._up_args(args)
-        args.append('postgresql')
+        args.append('postgres')
         return self.compose(args)
 
-    def postgresql_stop(self):
+    def postgres_stop(self):
         args = []
-        args.extend(['stop', 'postgresql'])
+        args.extend(['stop', 'postgres'])
         return self.compose(args)
 
-    def postgresql_rm(self):
+    def postgres_rm(self):
         args = []
-        args.extend(['rm', '-f', 'postgresql'])
+        args.extend(['rm', '-f', 'postgres'])
         return self.compose(args)
 
-    def postgresql_reset(self):
-        shutil.rmtree(self._setup_path / environ['HS_PG_SERVICE_DIR'] / 'mounts' / 'data')
+    def postgres_reset(self):
+        shutil.rmtree(self._setup_path / environ['HS_PG_HOME'] / 'service' / 'mounts' / 'data')
 
     # =========================
     # Elasticsearch commands

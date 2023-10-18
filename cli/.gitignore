@@ -1,3 +1,4 @@
 .idea/
 /setupservice.egg-info/
 /src/hapisetup.egg-info/
+/.venv*

@@ -1,18 +1,24 @@
-[project]
-name = 'hapisetup'
-version = '0.1.0'
-
-dependencies = [
-    'typer',
-    'rich',
+[tool.poetry]
+name = "hapisetup"
+version = "0.1.0"
+description = ""
+authors = ["Shahim Essaid <shahim@essaid.com>"]
+readme = "README.md"
+packages = [
+    {include = "hapisetup",  from = "src"}
 ]
 
-[build-system]
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
-
-#[project.scripts]
-#hapisetup = 'hapisetup:hapisetup'
-
-[project.entry-points."console_scripts"]
+[tool.poetry.scripts]
 hapisetup = "hapisetup:cli"
+hdc = 'hapisetup.compose_cli:compose.cli'
+
+[tool.poetry.dependencies]
+python = "^3.7"
+typer = "^0.9.0"
+rich = "^13.6.0"
+docker = "^6.1.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -127,41 +127,41 @@ def reset(
 # Postgresql commands
 # =========================
 
-postgresql_cli: typer.Typer = typer.Typer(rich_markup_mode="markdown")
-cli.add_typer(postgresql_cli, name='postgresql')
+postgres_cli: typer.Typer = typer.Typer(rich_markup_mode="markdown")
+cli.add_typer(postgres_cli, name='postgres')
 
 
 # @hapisetup.group(name='pg')
-@postgresql_cli.callback()
-def postgresql():
+@postgres_cli.callback()
+def postgres():
     """Postgresql specific subcommands"""
     pass
 
 
 # @postgresql.command(name='up')
-@postgresql_cli.command(name='up')
-def postgresql_up():
-    hs.postgresql_up()
+@postgres_cli.command(name='up')
+def postgres_up():
+    hs.postgres_up()
 
 
 # @postgresql.command(name='stop')
-@postgresql_cli.command(name='stop')
-def postgresql_stop():
-    hs.postgresql_stop()
+@postgres_cli.command(name='stop')
+def postgres_stop():
+    hs.postgres_stop()
 
 
 # @postgresql.command(name='remove')
-@postgresql_cli.command(name='rm')
-def postgresql_rm():
+@postgres_cli.command(name='rm')
+def postgres_rm():
     """Stops and removes the Postgresql container"""
-    hs.postgresql_stop()
-    hs.postgresql_rm()
+    hs.postgres_stop()
+    hs.postgres_rm()
 
 
-@postgresql_cli.command('reset')
-def postgresql_reset():
-    postgresql_rm()
-    hs.postgresql_reset()
+@postgres_cli.command('reset')
+def postgres_reset():
+    postgres_rm()
+    hs.postgres_reset()
 
 
 # =========================
