@@ -1,5 +1,5 @@
 # from os import environ
 
-environ['CW_SERVICES'] = ',postgres:postgres,'
+# CW_NAME = 'testing-name'
+CW_SERVICES = ',postgres:postgres,'
 
-compose.add_compose_file('config/compose.yaml')

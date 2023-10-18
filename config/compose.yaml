@@ -1,5 +1,4 @@
-name: hello_compose
-
+name: testing-name
 services:
   hello:
     image: hello-world
