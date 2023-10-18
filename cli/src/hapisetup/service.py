@@ -18,4 +18,7 @@ class Service:
         self.path: Path = path
         self.compose = compose
         self.cli = typer.Typer()
+        self.env_vars: dict[str, str] = {}
+        self.compose_files: list[Path] = []
+        self.env_files: list[Path] = []
 

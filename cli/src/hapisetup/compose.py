@@ -1,7 +1,10 @@
+import subprocess
 import typing
+from functools import partial, update_wrapper
 from os import environ
 from pathlib import Path
 import logging
+from subprocess import Popen
 
 import typer
 from typing_extensions import Annotated
@@ -20,9 +23,69 @@ class Compose:
                         'Compose': Compose,
                         'Service': Service}
 
-        @self.cli.callback()
-        def dc_cli():
-            print(f'============ DC cli callback ran on  {self} ')
+        self.env_vars: dict[str, str] = {}
+        self.compose_files: list[Path] = []
+        self.env_files: list[Path] = []
+
+        self.cli.command(name='compose',
+                         context_settings=dict(
+                             ignore_unknown_options=True,
+                             allow_extra_args=True),
+                         add_help_option=False)(self._run_compose)
+
+        # @self.cli.callback()
+        # def dc_cli():
+        #     print(f'============ DC cli callback ran on  {self} ')
+
+    def get_all_compose_files(self) -> list[Path]:
+        files = list(self.compose_files)
+        for s in self.services.values():
+            files.extend(s.compose_files)
+        return files
+
+    def get_all_env_files(self) -> list[Path]:
+        files = list(self.env_files)
+        for s in self.services.values():
+            files.extend(s.env_files)
+        return files
+
+    def get_all_env_vars(self) -> dict[str, str]:
+
+        env_vars = dict()
+        env_vars.update(self.env_vars)
+        for s in self.services.values():
+            env_vars.update(s.env_vars)
+        env_vars.update(environ)
+        key_list = list(env_vars.keys())
+        key_list.sort()
+        sorted_vars = {k: env_vars[k] for k in key_list}
+        # for item in sorted_vars.items():
+        #     print(f'{item[0]}  -->  {item[1]}')
+        return sorted_vars
+
+    def add_compose_file(self, relative_compose_file_path: typing.Union[str, Path]):
+        if isinstance(relative_compose_file_path, str):
+            relative_compose_file_path = Path(relative_compose_file_path)
+        relative_compose_file_path = self.get_relative_path(relative_compose_file_path)
+        self.compose_files.append(relative_compose_file_path)
+
+    def _run_compose(self, ctx: Annotated[typer.Context, typer.Argument()]):
+        compose_line = ['docker', 'compose', '--project-directory', self.path]
+        kwargs = {'stdout': None, 'stderr': None}
+
+        for f in self.get_all_compose_files():
+            compose_line.append('-f')
+            compose_line.append(f)
+
+        for f in self.get_all_env_files():
+            compose_line.append('--env-file')
+            compose_line.append(f)
+
+        compose_line.extend(ctx.args)
+        logging.info(f'compose: {compose_line}')
+        popen = Popen(compose_line, env=self.get_all_env_vars(), **kwargs)
+        popen.wait()
+        return popen
 
     def init(self):
 
@@ -82,9 +145,7 @@ class Compose:
 
         hello_typer = typer.Typer(rich_markup_mode="markdown")
 
-        @hello_typer.command()
-        def hi():
-            print(' =========== hello')
+        hello_typer.command(name='hi')(self.hi)
 
         self.cli.add_typer(hello_typer, name='hello')
 
@@ -103,3 +164,6 @@ class Compose:
             return other_path.relative_to(self.path)
         else:
             raise ValueError(f'Path is not relative to compose path: {other_path}')
+
+    def hi(self, message: str):
+        print(f' =========== hello {self} {message}')
