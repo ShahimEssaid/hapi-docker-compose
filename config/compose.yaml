@@ -1,0 +1,6 @@
+name: hello_compose
+
+services:
+  hello:
+    image: hello-world
+

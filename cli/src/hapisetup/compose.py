@@ -104,7 +104,7 @@ class Compose:
                 logging.info(f'Loading {init_path}')
                 exec(open(init_path).read(), init_globals)
 
-        services_string = environ.get('DC_SERVICES', '')
+        services_string = environ.get('CW_SERVICES', '')
 
         # load service defs, if any
         for service_entry in [e.strip() for e in services_string.split(',') if e.strip()]:

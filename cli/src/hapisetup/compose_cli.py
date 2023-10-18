@@ -11,7 +11,7 @@ from typing_extensions import Annotated
 
 from hapisetup.compose import Compose
 
-dc_home = os.environ.get('DC_HOME', str(Path.cwd()))
+dc_home = os.environ.get('CW_HOME', str(Path.cwd()))
 dc_home_path = Path(dc_home).absolute().resolve()
 
 timestr = time.strftime("%Y%m%d-%H%M%S")
