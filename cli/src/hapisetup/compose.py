@@ -108,27 +108,8 @@ class Compose(ComposeBase):
         # see if we have them in the effective environment
 
         # load the defs
-        for fragment in ['', '_project', '_local']:
-            # defs
-            def_file = self.path / 'config' / f'init_defs{fragment}.py'
-            if def_file.exists():
-                logging.info(f'Loading def file: {def_file}')
-                exec(open(def_file).read(), self.compose.globals)
-
-        # run the inits
-        init_globals = dict(self.compose.globals)
-        for fragment in ['', '_project', '_local']:
-            init_path = self.path / 'config' / f'init{fragment}.py'
-            if init_path.exists():
-                logging.info(f'Loading {init_path}')
-                exec(open(init_path).read(), init_globals)
-        for item in init_globals.items():
-            var_name = item[0]
-            var_val = item[1]
-            if var_name.startswith('CW_'):
-                if not isinstance(var_val, str):
-                    raise ValueError(f'{self} set var {var_name} to a non string value {var_val}')
-                self.env_vars[var_name] = var_val
+        super()._init_defs()
+        super()._init_scripts()
 
         # we should have service and profile names by this point
         services_string = self.get_effective_env_vars().get('CW_SERVICES', None)
@@ -166,6 +147,7 @@ class Compose(ComposeBase):
         # init defs and load files first
         self._init_defs()
         self._init_default_config_files()
+
         for service in self.services.values():
             service._init_defs()
             service._init_default_config_files()

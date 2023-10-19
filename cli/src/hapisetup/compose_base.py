@@ -25,7 +25,7 @@ class ComposeBase:
 
     def add_compose_env_file(self, compose_env_file_path: typing.Union[str, Path]):
         compose_env_file_path = self.compose.get_relative_path(compose_env_file_path)
-        if compose_env_file_path in self.compose_files:
+        if compose_env_file_path in self.env_files:
             logging.warning(f'Compose env file {compose_env_file_path} already added to compose. Ignoring.')
         else:
             self.env_files.append(compose_env_file_path)
@@ -34,29 +34,28 @@ class ComposeBase:
         return f'{self.name}@{self.path}'
 
     def _init_defs(self):
-        fragments = []
-        fragments.extend(['', '_project'])
-        fragments.extend([f'_{s}_service' for s in self.compose.service_names])
-        fragments.extend([f'_{p}_profile' for p in self.compose.profile_names])
+
         config_path = self.path / 'config'
         for fragment in self._get_fragments():
             # defs
-            def_file = config_path / f'init_defs{fragment}.py'
-            if def_file.exists():
-                logging.info(f'Loading def file: {def_file}')
-                exec(open(def_file).read(), self.compose.globals)
+            paths = self._get_config_files(config_path, f'def{fragment}*.py')
+            for path in paths:
+                logging.info(f'Loading def file: {path}')
+                exec(open(path).read(), self.compose.globals)
 
     def _init_default_config_files(self):
         config_path = self.path / 'config'
         fragments = self._get_fragments()
         for fragment in fragments:
-            compose_file = config_path / f'compose{fragment}.yaml'
-            if compose_file.exists():
-                self.add_compose_file(compose_file)
+            paths = self._get_config_files(config_path, f'compose{fragment}*.yaml')
+            for path in paths:
+                logging.info(f'Using compose file:{path}')
+                self.add_compose_file(path)
 
-            env_file = config_path / f'env{fragment}.env'
-            if env_file.exists():
-                self.add_compose_env_file(env_file)
+            paths = self._get_config_files(config_path, f'env{fragment}*.env')
+            for path in paths:
+                logging.info(f'Using env file:{path}')
+                self.add_compose_env_file(path)
 
     def _init_scripts(self):
 
@@ -73,10 +72,10 @@ class ComposeBase:
 
         config_path = self.path / 'config'
         for fragment in self._get_fragments():
-            init_path = config_path / f'init{fragment}.py'
-            if init_path.exists():
-                logging.info(f'Loading {init_path}')
-                exec(open(init_path).read(), init_globals)
+            paths = self._get_config_files(config_path, f'init{fragment}*.py')
+            for path in paths:
+                logging.info(f'Loading {path}')
+                exec(open(path).read(), init_globals)
 
         if isinstance(self, Service):
             self.compose.services[self.name] = init_globals['service']
@@ -91,8 +90,11 @@ class ComposeBase:
 
     def _get_fragments(self) -> list[str]:
         fragments = []
-        fragments.extend(['', '_project'])
+        fragments.extend(['_default', '_project'])
         fragments.extend([f'_{s}_service' for s in self.compose.service_names])
         fragments.extend([f'_{p}_profile' for p in self.compose.profile_names])
         fragments.append('_local')
         return fragments
+
+    def _get_config_files(self, config_dir: Path, file_patter: str):
+        return sorted(list([path for path in config_dir.rglob(file_patter) if path.is_file()]))
