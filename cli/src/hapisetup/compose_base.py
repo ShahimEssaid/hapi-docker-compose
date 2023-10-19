@@ -48,12 +48,13 @@ class ComposeBase:
 
     def _init_default_config_files(self):
         config_path = self.path / 'config'
-        for fragment in self._get_fragments():
+        fragments = self._get_fragments()
+        for fragment in fragments:
             compose_file = config_path / f'compose{fragment}.yaml'
             if compose_file.exists():
                 self.add_compose_file(compose_file)
 
-            env_file = config_path / f'commpose{fragment}.env'
+            env_file = config_path / f'compose{fragment}.env'
             if env_file.exists():
                 self.add_compose_env_file(env_file)
 

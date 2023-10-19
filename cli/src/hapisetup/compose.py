@@ -65,7 +65,8 @@ class Compose(ComposeBase):
             compose_line.append('-f')
             compose_line.append(f)
 
-        for f in self.get_all_env_files():
+        env_files = self.get_all_env_files()
+        for f in env_files:
             compose_line.append('--env-file')
             compose_line.append(f)
 
