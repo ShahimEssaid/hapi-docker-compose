@@ -1,9 +1,7 @@
-import subprocess
+import logging
 import typing
-from functools import partial, update_wrapper
 from os import environ
 from pathlib import Path
-import logging
 from subprocess import Popen
 
 import typer
@@ -18,7 +16,8 @@ class Compose(ComposeBase):
                  ):
         super().__init__(compose=self, path=compose_path.absolute().resolve())
 
-        self.profiles: list[str] = []
+        self.service_names: list[str] = []
+        self.profile_names: list[str] = []
 
         self.cli.command(name='compose',
                          context_settings=dict(
@@ -44,12 +43,13 @@ class Compose(ComposeBase):
             files.extend(s.env_files)
         return files
 
-    def get_all_env_vars(self) -> dict[str, str]:
+    def get_effective_env_vars(self) -> dict[str, str]:
 
         env_vars = dict()
         env_vars.update(self.env_vars)
-        for s in self.services.values():
-            env_vars.update(s.env_vars)
+        for service in self.services.values():
+            env_vars.update(service.env_vars)
+        # environment overrides
         env_vars.update(environ)
         key_list = list(env_vars.keys())
         key_list.sort()
@@ -72,7 +72,7 @@ class Compose(ComposeBase):
         cli_args = ctx.args
         compose_line.extend(cli_args)
         logging.info(f'compose: {compose_line}')
-        popen = Popen(compose_line, env=self.get_all_env_vars(), **kwargs)
+        popen = Popen(compose_line, env=self.get_effective_env_vars(), **kwargs)
         popen.wait()
         return popen
 
@@ -102,87 +102,77 @@ class Compose(ComposeBase):
         print(f' =========== hello {self} {message}')
 
     def init(self):
-        super().init()
+        # First run
+        # discover service and profile names and populate those lists. These should not change with the second path
+        # see if we have them in the effective environment
 
-        # # # load compose defs, if any
-        # # for fragment in ['', '_project', '_local']:
-        # #     defs_path = self.path / 'config' / f'init{fragment}_defs.py'
-        # #     if defs_path.exists():
-        # #         logging.info(f'Loading {defs_path}')
-        # #         exec(open(defs_path).read(), self.globals)
-        #
-        # # load compose inits, if any
-        # init_globals = dict(self.globals)
-        # for fragment in ['', '_project', '_local']:
-        #     init_path = self.path / 'config' / f'init{fragment}.py'
-        #     if init_path.exists():
-        #         logging.info(f'Loading {init_path}')
-        #         exec(open(init_path).read(), init_globals)
-        #
-        # for item in init_globals.items():
-        #     var_name = item[0]
-        #     var_val = item[1]
-        #     if var_name.startswith('CW_'):
-        #         if not isinstance(var_val, str):
-        #             raise ValueError(f'Compose init set var {var_name} to a non string value {var_val}')
-        #         self.env_vars[var_name] = var_val
-        #
-        # self.name = self.env_vars.get('CW_NAME')
+        # load the defs
+        for fragment in ['', '_project', '_local']:
+            # defs
+            def_file = self.path / 'config' / f'init_defs{fragment}.py'
+            if def_file.exists():
+                logging.info(f'Loading def file: {def_file}')
+                exec(open(def_file).read(), self.compose.globals)
 
-        # self.name =  self.env_vars.get('CW_NAME')
+        # run the inits
+        init_globals = dict(self.compose.globals)
+        for fragment in ['', '_project', '_local']:
+            init_path = self.path / 'config' / f'init{fragment}.py'
+            if init_path.exists():
+                logging.info(f'Loading {init_path}')
+                exec(open(init_path).read(), init_globals)
+        for item in init_globals.items():
+            var_name = item[0]
+            var_val = item[1]
+            if var_name.startswith('CW_'):
+                if not isinstance(var_val, str):
+                    raise ValueError(f'{self} set var {var_name} to a non string value {var_val}')
+                self.env_vars[var_name] = var_val
 
-        services_string = self.env_vars.get('CW_SERVICES')
+        # we should have service and profile names by this point
+        services_string = self.get_effective_env_vars().get('CW_SERVICES', None)
+        profiles_string = self.get_effective_env_vars().get('CW_PROFILES', None)
+        if services_string is None or profiles_string is None:
+            raise ValueError(f'Unable to find services string: {services_string} or profiles string: {profiles_string}')
+
+        # collect profile names
+        for profile in [p.strip() for p in profiles_string.split(',') if p.strip()]:
+            if profile in self.profile_names:
+                logging.warning(
+                    f'Duplicate profile name: {profile} in profiles: {self.profile_names}. Ignoring.')
+            else:
+                self.profile_names.append(profile)
+        # collect service names and services
         for service_entry in [e.strip() for e in services_string.split(',') if e.strip()]:
             service_parts = service_entry.split(':')
             service_name = service_parts[0].strip()
             service_dirname = service_parts[1].strip()
 
-            from hapisetup.service import Service
-            Service(name=service_name,
-                    path=self.get_full_path(service_dirname),
-                    compose=self)
+            if service_name in self.service_names:
+                logging.warning(
+                    f'Duplicate service name: {service_name} with service path: {service_dirname} in service names: {self.service_names}  while initializing. Ignoring')
+            else:
+                self.service_names.append(service_name)
+                if service_dirname:
+                    from hapisetup.service import Service
+                    service = Service(name=service_name,
+                                      path=self.get_full_path(service_dirname),
+                                      compose=self)
+                    self.services[service_name] = service
 
-        # # load service defs, if any
-        # for service_entry in [e.strip() for e in services_string.split(',') if e.strip()]:
-        #     service_parts = service_entry.split(':')
-        #     service_name = service_parts[0].strip()
-        #     service_dirname = service_parts[1].strip()
-        #     for fragment in ['', '_project', '_local']:
-        #         defs_path = self.path / service_dirname / 'config' / f'init{fragment}_defs.py'
-        #         if defs_path.exists():
-        #             logging.info(f'Loading {defs_path}')
-        #             exec(open(defs_path).read(), self.globals)
-        #
-        # # instantiate all service objects
-        # for service_entry in [e.strip() for e in services_string.split(',') if e.strip()]:
-        #     service_parts = service_entry.split(':')
-        #     service_name = service_parts[0].strip()
-        #     service_dirname = service_parts[1].strip()
-        #
-        #     from hapisetup.service import Service
-        #     Service(name=service_name,
-        #             path=self.get_full_path(service_dirname),
-        #             compose=self)
-        #
-        #     init_globals: dict[str, typing.Any] = dict(self.globals)
-        #     for fragment in ['', '_project', '_local']:
-        #         init_globals['service'] = service
-        #         init_path = service.path / 'config' / f'init{fragment}.py'
-        #         if init_path.exists():
-        #             logging.info(f'Loading {init_path}')
-        #             exec(open(init_path).read(), init_globals)
-        #             service = init_globals['service']
-        #
-        #     for item in init_globals.items():
-        #         var_name = item[0]
-        #         var_val = item[1]
-        #         if var_name.startswith('CW_'):
-        #             if not isinstance(var_val, str):
-        #                 raise ValueError(f'Service {service} set var {var_name} to a non string value {var_val}')
-        #             service.env_vars[var_name] = var_val
-        #
-        #     self.services[service_name] = service
-        #
+        # now that we have service and profile names we can do the full initialization
+
+        # init defs and load files first
+        self._init_defs()
+        self._init_default_config_files()
+        for service in self.services.values():
+            service._init_defs()
+            service._init_default_config_files()
+
+        self._init_scripts()
+        for service in self.services.values():
+            service._init_scripts()
+
         for service in self.services.values():
             self.cli.add_typer(service.cli, name=service.name)
 

@@ -60,7 +60,8 @@ class HapiSetup:
                 p.unlink()
             for p in (self._setup_path / 'service' / 'hapi' / 'mounts' / 'workdir' / 'loaders').glob("**/*loading.txt"):
                 p.unlink()
-            for p in (self._setup_path / 'service' / 'hapi' / 'mounts' / 'workdir' / 'loaders').glob("**/*response.txt"):
+            for p in (self._setup_path / 'service' / 'hapi' / 'mounts' / 'workdir' / 'loaders').glob(
+                    "**/*response.txt"):
                 p.unlink()
         # if kwargs['hapi_build']:
         #     shutil.rmtree(self._setup_path / 'hapi' / 'logs', ignore_errors=True)

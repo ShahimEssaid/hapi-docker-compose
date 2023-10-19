@@ -269,7 +269,7 @@ def hapi():
 @hapi_cli.command(name='load')
 def load(loaders_dir: Annotated[
     pathlib.Path, typer.Option(help='The relative path to a loaders directory under hapi/...')] = pathlib.Path(
-    'loaders')):
+        'loaders')):
     hs.hapi_load(loaders_dir)
 
 
@@ -346,6 +346,8 @@ def cassandra_rm():
 
 @cli.command(name='test', hidden=True)
 # @click.option('--arg', multiple=True, default=[])
-def test(arg: Annotated[typing.Optional[typing.List[str]], typer.Option()] = []):
+def test(arg: Annotated[typing.Optional[typing.List[str]], typer.Option()] = None):
+    if arg is None:
+        arg = []
     print(f'Value: {arg}')
     print(f'Type: {type(arg)}')
