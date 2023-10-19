@@ -15,3 +15,4 @@ bin/.git-last-head
 /env/local.py
 /config/compose_init_local.py
 /logs/
+*local.*

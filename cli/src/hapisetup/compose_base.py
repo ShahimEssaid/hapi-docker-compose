@@ -54,7 +54,7 @@ class ComposeBase:
             if compose_file.exists():
                 self.add_compose_file(compose_file)
 
-            env_file = config_path / f'compose{fragment}.env'
+            env_file = config_path / f'env{fragment}.env'
             if env_file.exists():
                 self.add_compose_env_file(env_file)
 

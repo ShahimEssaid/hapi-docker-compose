@@ -1,5 +1,6 @@
-name: testing-name
 services:
   hello:
     image: hello-world
+    environment:
+      one: ${FOR_POSTGRES:?err}
 
