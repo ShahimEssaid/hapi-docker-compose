@@ -4,19 +4,19 @@ if [[ -z "${HS_HOME:-}" ]]; then
     (return 0 2>/dev/null) && { echo "returning 1"; return 1; }  || { echo "exiting 1"; exit 1; }
 fi
 
-export HS_VENV="${HS_VENV:-"${HS_HOME}/cli/.venv"}"
+export HS_VENV="${HS_VENV:-"${HS_HOME}/.venv"}"
 
-if  [[ ! -d "setup/cli" ]]; then
-    echo "Current directory is: $(pwd) but it should be the root of the setup. Exiting 1."
-fi
+#if  [[ ! -d "setup/cli" ]]; then
+#    echo "Current directory is: $(pwd) but it should be the root of the setup. Exiting 1."
+#fi
 
 # check if we want to remove the .venv
 GIT_HEAD=$(git rev-parse HEAD)
 touch "bin/.git-last-head"
 GIT_HEAD_OLD=$(<bin/.git-last-head)
 if [[ $GIT_HEAD != $GIT_HEAD_OLD ]]; then
-    echo "Removing cli/.venv, if it exists, because Git HEAD is not current."
-    rm -fr "cli/.venv"
+    echo "Removing .venv, if it exists, because Git HEAD is not current."
+    rm -fr ".venv"
     echo -n $GIT_HEAD >| bin/.git-last-head
 fi
 
@@ -24,8 +24,10 @@ if [[ ! -d ${HS_VENV} ]]; then
   # TODO: fix the --copies issue with some/all macOS
   python3 -m venv "${HS_VENV}"
   . "${HS_VENV}/bin/activate"
-  pip install -U pip
-  pip install -e "${HS_HOME}/cli"
+  pip install -U pip poetry
+  cd "${HS_HOME}/cli"
+  poetry install
+  cd "${HS_HOME}"
 else
   . "${HS_VENV}/bin/activate"
 fi

@@ -1,3 +1,4 @@
+import glob
 # Allow a  "project" to set HS_PROFILES and other variables as needed and be committed.
 init_project_path = Path('env/project.py')
 init_project_path.touch()
@@ -8,9 +9,21 @@ init_local_path = Path('env/local.py')
 init_local_path.touch()
 exec(open(init_local_path).read())
 
-# If HS_PROFILES not already set, we set the default.
-os.environ['HS_PROFILES'] = os.environ.get('HS_PROFILES', 'env-default,hs-default,hs-project,hs-local')
+# Load defaults for the service
+os.environ['HS_SERVICES'] = os.environ.get('HS_SERVICES', ',postgres,')
+for service in [p.strip() for p in os.environ['HS_SERVICES'].split(',')]:
+    if not service:
+        continue
+    cli_environment_path = Path(service) / 'config' / 'cli-environment-defaults.py'
+    print(f'Loading service CLIP environment from: {cli_environment_path}')
+    exec(open(cli_environment_path).read())
 
+# Need to have these files in place to avoid errors from the compose file referencing them.
+for config_dir in glob.glob('*/config/'):
+    (Path(config_dir) / 'local.env').touch()
+
+# If HS_PROFILES not set by this point, we set the default.
+os.environ['HS_PROFILES'] = os.environ.get('HS_PROFILES', 'env-default,hs-default,hs-project,hs-local')
 if os.environ['HS_PROFILES_PREFIX']:
     os.environ['HS_PROFILES'] = os.environ['HS_PROFILES_PREFIX'] + ',' + os.environ['HS_PROFILES']
 if os.environ['HS_PROFILES_SUFFIX']:
@@ -29,6 +42,4 @@ for env in [p.strip() for p in os.environ['HS_PROFILES'].split(',')]:
         print(f'Attempting to load environment file: {env_path}')
         exec(open(env_path).read())
 
-# Create these files if needed so compose.yml can resolve them.
-for service in ['postgresql', 'elasticsearch', 'kibana', 'hapi-build', 'hapi', 'janusgraph', 'cassandra']:
-    Path(f'service/{service}/local.env').touch()
+
