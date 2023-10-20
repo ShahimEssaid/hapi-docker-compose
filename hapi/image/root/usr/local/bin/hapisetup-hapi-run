@@ -19,11 +19,11 @@ shopt -s nullglob
 #mkdir -p /hapi/.fhir
 
 
-if [[ ,${HS_PROFILES}, == *,hs-postgresql,* ]]; then
+if [[ ,${CW_SERVICES}, == *,postgres,* ]]; then
   echo "HAPI using Postgresql. Checking if ready..."
   seconds=0
   while true; do
-    if pg_isready -h postgresql -d "${HS_HAPI_DB_NAME}" -U "${HS_HAPI_DB_USER}" ; then
+    if pg_isready -h "${CW_HAPI_DB_HOST}" -d "${CW_HAPI_DB_NAME}" -U "${CW_HAPI_USER_NAME}" ; then
       echo "Postgresql is ready. Continuing..."
       break
     else
@@ -38,7 +38,7 @@ if [[ ,${HS_PROFILES}, == *,hs-postgresql,* ]]; then
   done
 fi
 
-if [[ ,${HS_PROFILES}, == *,hs-elasticsearch,* ]]; then
+if [[ ,${CW_SERVICES}, == *,elasticsearch,* ]]; then
   echo "HAPI using Elasticsesarch. Checking if ready..."
 
   # https://www.strangebuzz.com/en/snippets/checking-if-the-elasticsearch-service-of-a-docker-container-is-ready
@@ -47,7 +47,7 @@ if [[ ,${HS_PROFILES}, == *,hs-elasticsearch,* ]]; then
   # as soon as the cluster is yellow or green
   seconds=0
   while true; do
-    HTTP_CODE=$(curl -u "${HS_HAPI_ES_USER}:${HS_HAPI_ES_PASSWD}" --write-out "%{http_code}" --output "elasticsearch-curl.txt" 'elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=5s') || true
+    HTTP_CODE=$(curl -u "${CW_HAPI_ES_USER}:${CW_HAPI_ES_PASSWD}" --write-out "%{http_code}" --output "elasticsearch-curl.txt" 'elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=5s') || true
     if [[ ${HTTP_CODE} == 200 ]]; then
       echo "Elasticsearch available, continuing...."
       break
@@ -65,4 +65,4 @@ if [[ ,${HS_PROFILES}, == *,hs-elasticsearch,* ]]; then
 fi
 
 
-eval "exec java ${HS_HAPI_JAVA_OPTIONS} -jar ${HS_HAPI_JAR} ${HS_HAPI_ARGS}"
+eval "exec java ${CW_HAPI_JAVA_OPTIONS} -jar ${CW_HAPI_JAR} ${CW_HAPI_ARGS}"

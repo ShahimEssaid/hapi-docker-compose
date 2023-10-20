@@ -1,0 +1,17 @@
+spring:
+  jpa:
+    hibernate.search.enabled: true
+    hibernate.search.backend.type: elasticsearch
+    hibernate.search.backend.analysis.configurer: ca.uhn.fhir.jpa.search.HapiHSearchAnalysisConfigurers$HapiElasticAnalysisConfigurer
+
+elasticsearch:
+#  debug:
+#    pretty_print_json_log: false
+#    refresh_after_write: false
+  enabled: true
+  protocol: 'http'
+  rest_url: 'elasticsearch:9200'
+  username: admin
+  password: admin
+  required_index_status: YELLOW
+  schema_management_strategy: CREATE

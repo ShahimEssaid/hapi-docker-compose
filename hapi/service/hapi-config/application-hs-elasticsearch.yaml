@@ -1,0 +1,29 @@
+hapi:
+  fhir:
+    advanced_lucene_indexing: true
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        search:
+          enabled: true
+          backend:
+            type: elasticsearch
+            analysis:
+              configurer: ca.uhn.fhir.jpa.search.HapiHSearchAnalysisConfigurers$HapiElasticAnalysisConfigurer
+#            schema_management:
+#              settings_file: file:/hapi/config/es-index-settings.json
+#              mapping_file: file:/hapi/config/es-mapping-settings.json
+
+elasticsearch:
+#  debug:
+  pretty_print_json_log: true
+#    refresh_after_write: false
+  enabled: true
+  protocol: 'http'
+  rest_url: '${HS_HAPI_ES_HOST}:${HS_HAPI_ES_PORT}'
+  username: ${HS_HAPI_ES_USER}
+  password: ${HS_HAPI_ES_PASSWD}
+  required_index_status: YELLOW
+  schema_management_strategy: CREATE

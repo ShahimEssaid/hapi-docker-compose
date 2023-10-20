@@ -1,0 +1,9 @@
+{
+  "Essaid": "Essaid",
+  "number_of_shards": "2",
+  "mapping": {
+    "nested_objects": {
+      "limit": "1000000"
+    }
+  }
+}

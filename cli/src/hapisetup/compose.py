@@ -1,4 +1,5 @@
 import logging
+import signal
 import typing
 from os import environ
 from pathlib import Path
@@ -74,6 +75,19 @@ class Compose(ComposeBase):
         compose_line.extend(cli_args)
         logging.info(f'compose: {compose_line}')
         popen = Popen(compose_line, env=self.get_effective_env_vars(), **kwargs)
+
+        def sigint(some_signal, *args, **kwargs):
+            print('=============  SIG INT called  in compose  ============')
+            popen.send_signal(signal.SIGINT)
+
+        signal.signal(signal.SIGINT, sigint)
+
+        def sigterm(some_signal, *args, **kwargs):
+            print('=============  SIG TERM called  in compose  ============')
+            popen.send_signal(signal.SIGTERM)
+
+        signal.signal(signal.SIGTERM, sigterm)
+
         popen.wait()
         return popen
 

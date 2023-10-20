@@ -8,15 +8,22 @@ services:
       - ${CW_HAPI_HOME}/config/envs/default.env
       - ${CW_HAPI_HOME}/config/envs/project.env
       - ${CW_HAPI_HOME}/config/envs/local.env
+    environment:
+      PYTHONUNBUFFERED: yes
+      CW_HAPI_SPRING_PROFILES: ${CW_HAPI_SPRING_PROFILES}
     ports:
       - target: ${CW_HAPI_PORT:?err}
         host_ip: ${CW_HAPI_HOST:?err}
         published: ${CW_HAPI_PORT:?err}
     volumes:
       - type: bind
+        source: ${CW_HAPI_HOME:?err}/service/mounts/hapibuild
+        target: /hapibuild
+      - type: bind
         source: ${CW_HAPI_HOME:?err}/service/mounts/hapi
         target: /hapi
       - type: bind
-        source: ${CW_HAPI_HOME:?err}/service/mounts/hapibuild
-        target: /hapibuild
-    command: [ 'run-hapi','--build' ]
+        source: ${CW_HAPI_HOME:?err}/service/hapi-config
+        target: /hapi/config
+
+    command: [ 'run-hapi']

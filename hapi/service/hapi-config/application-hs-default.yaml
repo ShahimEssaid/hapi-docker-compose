@@ -1,0 +1,11 @@
+server:
+  port: ${HS_HAPI_PORT}
+
+hapi:
+  fhir:
+    server_address: ${HS_HAPI_API_URL}
+    tester:
+      home:
+        name: HAPI Compose Setup
+        server_address: ${HS_HAPI_API_URL}
+        fhir_version: R4

@@ -14,4 +14,4 @@ cd /hapi-run-cli
 echo "in hapirun"
 echo "$@"
 
-"$@"
+exec "$@"
