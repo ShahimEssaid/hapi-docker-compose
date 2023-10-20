@@ -1,0 +1,8 @@
+services:
+
+  hapi:
+    ports:
+      - host_ip: ${CW_HAPI_HOST_DEBUG:?err}
+        target: 8081
+        published: ${HS_HAPI_PORT_DEBUG}
+

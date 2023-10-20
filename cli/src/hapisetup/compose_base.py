@@ -10,7 +10,7 @@ class ComposeBase:
         from hapisetup.compose import Compose
         self.compose: Compose = compose
         self.path: Path = path
-        self.name = name
+        self.name: str = name
         self.env_vars: dict[str, str] = {}
         self.env_files: list[Path] = []
         self.compose_files: list[Path] = []
@@ -52,8 +52,9 @@ class ComposeBase:
                 logging.info(f'Using compose file:{path}')
                 self.add_compose_file(path)
 
-            paths = self._get_config_files(config_path, f'env{fragment}*.env')
+            paths = self._get_config_files(config_path, f'arg{fragment}*.env')
             for path in paths:
+
                 logging.info(f'Using env file:{path}')
                 self.add_compose_env_file(path)
 

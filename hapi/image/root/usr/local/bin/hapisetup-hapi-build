@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -x
+set -e
+set -u
+set -o pipefail
+set -o noclobber
+shopt -s nullglob
+
+B_TIMESTAMP=$(date +%Y%m%d_%H%M)
+B_FROM_SOURCE=false
+B_SOURCE_DIR=
+B_BINARY_NAME=
+B_BINARY_DIR=
+B_FILE_CHARS="^-0-9a-zA-Z_."
+
+# If we have a source directory mounted as the volume, we built it and use the final artifact as the binary
+# We set the BUILD_DIR to the root of the volume and build later, if we're using a build approach.
+
+if [[ $(git rev-parse --is-inside-work-tree) == true || ${CW_HAPI_BUILD_TYPE} == git ]]; then
+  if [[ $(git rev-parse --is-inside-work-tree) == true ]]; then
+    B_FROM_SOURCE=true
+    B_SOURCE_DIR=$(pwd)
+  else
+    B_FROM_SOURCE=true
+    B_SOURCE_DIR="${CW_HAPI_BUILD_GIT_REPO//[${B_FILE_CHARS}]/_}"
+    if [[ ! -d ${B_SOURCE_DIR} ]]; then
+      git clone "${CW_HAPI_BUILD_GIT_REPO}" "${B_SOURCE_DIR}"
+    fi
+    cd "${B_SOURCE_DIR}"
+    git clean -xdfq
+    git fetch --all --tags
+    git checkout "${CW_HAPI_BUILD_GIT_REF}"
+  fi
+fi
+
+if [[ ${B_FROM_SOURCE} == true ]]; then
+
+  # build binary name based on git info
+
+  # first the commit info
+  B_BINARY_NAME="$(git describe --all --long)"
+
+  # if worktree is dirty or has untracked files, we add the worktree and untracked hashes (obtained from a temporary stash.
+  if [[ $(git status --porcelain) ]]; then
+    # We have dirty or untracked files. Use a stash to find hashes.
+    git stash push -u
+    # shellcheck disable=SC1083
+    B_BINARY_NAME="${B_BINARY_NAME}_$(git rev-parse --short stash^{tree})_$(git rev-parse --short stash^3^{tree})"
+    git stash pop 0
+  fi
+
+  # append final name and type
+  B_FINAL_NAME="$(mvn -Dmaven.repo.local=/hapibuild/.m2 -Pboot help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)"
+  B_FINAL_EXT="$(mvn -Dmaven.repo.local=/hapibuild/.m2 -Pboot help:evaluate -Dexpression=project.packaging -q -DforceStdout)"
+  B_BINARY_NAME="${B_BINARY_NAME}_${B_FINAL_NAME}"
+  B_BINARY_NAME="${B_BINARY_NAME}.${B_FINAL_EXT}"
+  B_BINARY_NAME="${B_BINARY_NAME//[${B_FILE_CHARS}]/_}"
+
+  # binary directory name
+  if git config --get "remote.origin.url"; then
+    B_REMOTE="$(git config --get "remote.origin.url")"
+    B_BINARY_DIR=${B_REMOTE//[${B_FILE_CHARS}]/_}
+  else
+    B_BINARY_DIR=NO-ORIGIN-REMOTE
+  fi
+
+  B_EXISTING=
+  # Decide if we need to build a new binary
+  if [[ -d "/hapibuild/_builds/${B_BINARY_DIR}" ]]; then
+    readarray -t binaries <<<"$(ls "/hapibuild/_builds/${B_BINARY_DIR}")"
+    for binary in "${binaries[@]}"; do
+      if [[ $binary == *"${B_BINARY_NAME}" ]]; then
+        B_EXISTING="${binary}"
+        break
+      fi
+    done
+  fi
+
+  if [[ ${CW_HAPI_BUILD_ALWAYS} == 'true' ]]; then
+    B_EXISTING=
+  fi
+
+  if [[ ${B_EXISTING} ]]; then
+    B_ROOTWAR="/hapibuild/_builds/${B_BINARY_DIR}/${B_EXISTING}"
+  else
+    eval "${CW_HAPI_BUILD_CMD} -Dmaven.repo.local=/hapibuild/.m2"
+    mkdir -p "/hapibuild/_builds/${B_BINARY_DIR}"
+    cp -a "target/${B_FINAL_NAME}.${B_FINAL_EXT}" "/hapibuild/_builds/${B_BINARY_DIR}/${B_TIMESTAMP}_${B_BINARY_NAME}"
+    B_ROOTWAR="/hapibuild/_builds/${B_BINARY_DIR}/${B_TIMESTAMP}_${B_BINARY_NAME}"
+  fi
+
+fi
+
+if [[ ! -f /hapi/ROOT.war.build-path.txt || ${B_ROOTWAR} != $(cat /hapi/ROOT.war.build-path.txt) ]]; then
+  cp -a "${B_ROOTWAR}" "/hapi/ROOT.war"
+  echo "${B_ROOTWAR}" >>"/hapi/ROOT.war.build-path-history.txt"
+  echo "${B_ROOTWAR}" >|"/hapi/ROOT.war.build-path.txt"
+fi
+
+#https://oss.sonatype.org/content/repositories/snapshots/com/essaid/fhir/com.essaid.fhir.hapi-extensions/0.1.2-SNAPSHOT/com.essaid.fhir.hapi-extensions-SNAPSHOT.jar

@@ -16,3 +16,4 @@ bin/.git-last-head
 /config/compose_init_local.py
 /logs/
 *local.*
+!example_*local.*

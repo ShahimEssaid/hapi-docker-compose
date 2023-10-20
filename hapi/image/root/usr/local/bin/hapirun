@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -x
+set -e
+set -u
+set -o pipefail
+set -o noclobber
+shopt -s nullglob
+
+cd /hapi-run-cli
+. .venv/bin/activate
+
+#cd /hapibuild
+
+echo "in hapirun"
+echo "$@"
+
+"$@"

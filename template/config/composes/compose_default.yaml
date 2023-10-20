@@ -1,0 +1,6 @@
+services:
+
+  template:
+    build:
+      context: ${CW_TEMPLATE_HOME}/image
+

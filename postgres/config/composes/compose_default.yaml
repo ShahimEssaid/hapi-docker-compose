@@ -1,0 +1,24 @@
+services:
+
+  postgres:
+    build:
+      context: ${CW_POSTGRES_HOME:?err}/image
+    stop_grace_period: 5m
+    env_file:
+      - ${CW_POSTGRES_HOME}/config/envs/default.env
+      - ${CW_POSTGRES_HOME}/config/envs/project.env
+      - ${CW_POSTGRES_HOME}/config/envs/local.env
+#    user: ${HS_UID:?err}:${HS_GID:?err}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - target: 5432
+        host_ip: ${CW_POSTGRES_HOST:?err}
+        published: ${CW_POSTGRES_PORT:?err}
+    volumes:
+      - type: bind
+        source: ${CW_POSTGRES_HOME:?err}/service/mounts/data
+        target: /var/lib/postgresql/data

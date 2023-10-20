@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -x
+set -e
+set -u
+set -o pipefail
+set -o noclobber
+shopt -s nullglob
+
+#USERID=$(id -u)
+#
+#if ! getent passwd $USERID; then
+#  sudo groupadd --gid $USERID hapi
+#  sudo useradd --uid $USERID --gid hapi --shell /bin/bash --create-home /hapi hapi
+#fi
+#
+#echo "user id: $(id)"
+#cat /etc/passwd
+
+#mkdir -p /hapi/.fhir
+
+
+if [[ ,${HS_PROFILES}, == *,hs-postgresql,* ]]; then
+  echo "HAPI using Postgresql. Checking if ready..."
+  seconds=0
+  while true; do
+    if pg_isready -h postgresql -d "${HS_HAPI_DB_NAME}" -U "${HS_HAPI_DB_USER}" ; then
+      echo "Postgresql is ready. Continuing..."
+      break
+    else
+      echo "Waiting for Postgres. pg_isready returned $?"
+    fi
+    sleep 5
+    if [[ ${seconds} -gt 300 ]]; then
+      echo "Postgresql not available after ${seconds}. Exiting 1"
+      exit 1
+    fi
+    seconds=$((seconds + 5))
+  done
+fi
+
+if [[ ,${HS_PROFILES}, == *,hs-elasticsearch,* ]]; then
+  echo "HAPI using Elasticsesarch. Checking if ready..."
+
+  # https://www.strangebuzz.com/en/snippets/checking-if-the-elasticsearch-service-of-a-docker-container-is-ready
+  # If called very early the curl will receive an "empty" response and a failing status
+  # As soon as Elasticsearch can process the command, it will return a success status
+  # as soon as the cluster is yellow or green
+  seconds=0
+  while true; do
+    HTTP_CODE=$(curl -u "${HS_HAPI_ES_USER}:${HS_HAPI_ES_PASSWD}" --write-out "%{http_code}" --output "elasticsearch-curl.txt" 'elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=5s') || true
+    if [[ ${HTTP_CODE} == 200 ]]; then
+      echo "Elasticsearch available, continuing...."
+      break
+    else
+      echo >&2 "Elastisearch is unavailable yet. HTTP code: ${HTTP_CODE} - waiting for it.. $seconds"
+    fi
+    sleep 5
+
+    if [[ ${seconds} -gt 300 ]]; then
+      echo "Elasicsearch not available after ${seconds}. Exiting 1"
+      exit 1
+    fi
+    seconds=$((seconds + 5))
+  done
+fi
+
+
+eval "exec java ${HS_HAPI_JAVA_OPTIONS} -jar ${HS_HAPI_JAR} ${HS_HAPI_ARGS}"

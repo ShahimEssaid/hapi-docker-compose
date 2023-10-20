@@ -10,6 +10,8 @@ class Service(ComposeBase):
                  path: Path,
                  compose: Compose):
         super().__init__(compose=compose, path=path, name=name)
+        relative_path = str(compose.get_relative_path(self.path))
+        self.env_vars[f'CW_{self.name.upper()}_HOME'] = str(compose.get_relative_path(self.path))
 
         if not path.absolute().resolve().is_relative_to(compose.path):
             raise ValueError(

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -x
+set -e
+set -u
+set -o pipefail
+set -o noclobber
+shopt -s nullglob
+
+hapisetup-hapi-cli-install
+
+LOADERS_DIR=$(realpath "$1")
+export FHIR_API_BASE="http://hapi:${HS_HAPI_PORT}/fhir"
+
+WAIT=0
+while true; do
+  if ! curl --header "Content-Type: application/fhir+json" -f -L "${FHIR_API_BASE}/metadata" >/dev/null 2>&1; then
+
+    if ((WAIT > 300)); then
+      echo "Server is not up at ${FHIR_API_BASE}, exiting 1."
+      exit 1
+    fi
+
+    echo "Waiting 5 seconds on ${FHIR_API_BASE} to start..."
+    sleep 5
+    WAIT=$((WAIT + 5))
+  else
+    break 2
+  fi
+done
+
+HAPI_CLI="$(pwd)/hapi-cli/v${HS_HAPI_VERSION}/hapi-fhir-cli"
+export  HAPI_CLI
+
+cd "${LOADERS_DIR}"
+unzip -o "*.zip" || true
+
+for d in $(find "${LOADERS_DIR}" -mindepth 1 -maxdepth 1 -type d | sort); do
+
+  if [[ -d $d ]]; then
+    if [[ $d == *.off ]]; then
+      echo skipping loader: "$d"
+      continue
+    fi
+
+    if [ -f "${d}/load.sh" ]; then
+      echo "loading directory: $d"
+      chmod u+x "${d}/load.sh"
+      "${d}/load.sh"
+    fi
+  fi
+done
+
+echo "=================== FINISHED LOADERS ========================="
+
