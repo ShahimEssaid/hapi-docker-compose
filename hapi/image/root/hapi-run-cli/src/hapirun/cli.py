@@ -1,5 +1,6 @@
 import signal
 from subprocess import Popen
+from time import sleep
 from typing import Annotated
 
 import typer
@@ -38,20 +39,19 @@ def run(
     # try:
     popen = Popen(args, cwd='/hapi', **kwargs)
 
-    def sigint(some_signal, *args, **kwargs):
-        print('=============  SIG INT called  in hapi  ============')
-        popen.send_signal(signal.SIGINT)
-
-    signal.signal(signal.SIGINT, sigint)
+    # def sigint(some_signal, *args, **kwargs):
+    #     print('=============  SIG INT called  in hapi  ============')
+    #     popen.send_signal(signal.SIGINT)
+    #     sleep(1)
+    #
+    # signal.signal(signal.SIGINT, sigint)
 
     def sigterm(some_signal, *args, **kwargs):
         print('=============  SIG TERM called  in hapi  ============')
         popen.send_signal(signal.SIGTERM)
+        sleep(1)
 
     signal.signal(signal.SIGTERM, sigterm)
 
     popen.wait()
-    # except KeyboardInterrupt:
-    #     print('=====================  caught signal ==================== ')
-    #     popen.send_signal(signal.SIGINT)
-    #     popen.wait()
+

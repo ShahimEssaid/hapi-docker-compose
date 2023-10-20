@@ -22,8 +22,8 @@ elasticsearch:
 #    refresh_after_write: false
   enabled: true
   protocol: 'http'
-  rest_url: '${HS_HAPI_ES_HOST}:${HS_HAPI_ES_PORT}'
-  username: ${HS_HAPI_ES_USER}
-  password: ${HS_HAPI_ES_PASSWD}
+  rest_url: '${CW_HAPI_ES_HOST}:${CW_HAPI_ES_PORT}'
+  username: ${CW_HAPI_ES_USER}
+  password: ${CW_HAPI_ES_PASSWD}
   required_index_status: YELLOW
   schema_management_strategy: CREATE

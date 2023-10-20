@@ -3,7 +3,7 @@ services:
   hapi:
     build:
       context: ${CW_HAPI_HOME}/image
-    stop_grace_period: 10s
+    stop_grace_period: 15s
     env_file:
       - ${CW_HAPI_HOME}/config/envs/default.env
       - ${CW_HAPI_HOME}/config/envs/project.env

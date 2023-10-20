@@ -1,0 +1,28 @@
+services:
+
+  elasticsearch:
+    build:
+      context: ${CW_ELASTICSEARCH_HOME}/image
+    stop_grace_period: 5m
+    env_file:
+      - ${CW_ELASTICSEARCH_HOME}/config/envs/default.env
+      - ${CW_ELASTICSEARCH_HOME}/config/envs/project.env
+      - ${CW_ELASTICSEARCH_HOME}/config/envs/local.env
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    user: ${HS_UID:?err} #:${HS_GID:?err} to deal with keystore permissins when UID is not 1000. See: https://www.elastic.co/guide/en/elasticsearch/reference/7.13/docker.html#_configuration_files_must_be_readable_by_the_elasticsearch_user
+    ports:
+      - target: 9200
+        host_ip: ${CW_ESREST_HOST:?err}
+        published: ${CW_ESREST_PORT:?err}
+    healthcheck:
+      test: curl -u elastic:${CW_ESREST_PASSWORD:?err} -s -f elasticsearch:9200/_cat/health >/dev/null || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - type: bind
+        source: ${CW_ELASTICSEARCH_HOME:?err}/service/mounts/data
+        target: /usr/share/elasticsearch/data

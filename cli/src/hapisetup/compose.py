@@ -4,6 +4,7 @@ import typing
 from os import environ
 from pathlib import Path
 from subprocess import Popen
+from time import sleep
 
 import typer
 from typing_extensions import Annotated
@@ -78,17 +79,13 @@ class Compose(ComposeBase):
 
         def sigint(some_signal, *args, **kwargs):
             print('=============  SIG INT called  in compose  ============')
-            popen.send_signal(signal.SIGINT)
+            # popen.send_signal(signal.SIGINT)
+            sleep(1)
 
         signal.signal(signal.SIGINT, sigint)
 
-        def sigterm(some_signal, *args, **kwargs):
-            print('=============  SIG TERM called  in compose  ============')
-            popen.send_signal(signal.SIGTERM)
-
-        signal.signal(signal.SIGTERM, sigterm)
-
         popen.wait()
+
         return popen
 
     def get_full_path(self, relative_path: typing.Union[str, Path]) -> Path:
