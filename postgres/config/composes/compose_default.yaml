@@ -8,7 +8,11 @@ services:
       - ${CW_POSTGRES_HOME}/config/envs/default.env
       - ${CW_POSTGRES_HOME}/config/envs/project.env
       - ${CW_POSTGRES_HOME}/config/envs/local.env
-#    user: ${HS_UID:?err}:${HS_GID:?err}
+    # Keep this off for
+    #  user: ${CW_UID:?err}:${CW_GID:?err}
+    environment:
+      - CW_UID
+      - CW_GID
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s

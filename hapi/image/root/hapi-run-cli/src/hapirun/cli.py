@@ -1,7 +1,7 @@
 import signal
+from pathlib import Path
 from subprocess import Popen
-from time import sleep
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from typer import Typer
@@ -10,11 +10,13 @@ cli: Typer = Typer(add_help_option=True)
 
 print('running hapi cli')
 
+current_process = None
+terminated = False
 
-#
-# @cli.callback()
-# def callback(invoke_without_command=True):
-#     print('ran callback')
+
+def get_current_process() -> Any:
+    global current_process
+    return current_process
 
 
 @cli.command()
@@ -25,33 +27,51 @@ def run(
         build_repo: Annotated[str, typer.Option()] = 'https://github.com/hapifhir/hapi-fhir-jpaserver-starter.git',
         build_ref: Annotated[str, typer.Option()] = 'refs/tags/image/v6.8.3',
         build_command: Annotated[str, typer.Option()] = 'mvn -U -Pboot -DskipTests clean package',
-        message: Annotated[str, typer.Option()] = 'default message'
+        message: Annotated[str, typer.Option()] = 'default message',
+        load: Annotated[bool, typer.Option()] = False,
+        load_zip_dir: Annotated[Path, typer.Option()] = None,
+        load_unzip_dir: Annotated[Path, typer.Option()] = None
 ):
-    global popen
-    if build:
-        args = ['hapisetup-hapi-build', '--build']
-        kwargs = {'stdout': None, 'stderr': None}
-        popen = Popen(args, cwd='/hapibuild', **kwargs)
-        popen.wait()
-
-    args = ['hapisetup-hapi-run']
-    kwargs = {'stdout': None, 'stderr': None}
-    # try:
-    popen = Popen(args, cwd='/hapi', **kwargs)
-
-    # def sigint(some_signal, *args, **kwargs):
-    #     print('=============  SIG INT called  in hapi  ============')
-    #     popen.send_signal(signal.SIGINT)
-    #     sleep(1)
-    #
-    # signal.signal(signal.SIGINT, sigint)
+    global current_process, terminated
 
     def sigterm(some_signal, *args, **kwargs):
+        global  terminated
         print('=============  SIG TERM called  in hapi  ============')
-        popen.send_signal(signal.SIGTERM)
-        sleep(1)
+        process = get_current_process()
+        if process:
+            process.send_signal(signal.SIGTERM)
+        terminated = True
 
     signal.signal(signal.SIGTERM, sigterm)
 
-    popen.wait()
+    if load:
+        if not (load_zip_dir and load_unzip_dir):
+            raise ValueError(f'Loading zip or unzip directories not specified')
 
+    if (build or not Path('/hapi/ROOT.war').exists()) and not terminated:
+        args = ['hapisetup-hapi-build', '--build']
+        kwargs = {'stdout': None, 'stderr': None}
+        hapi_build_process = Popen(args, cwd='/hapibuild', **kwargs)
+        current_process = hapi_build_process
+        hapi_build_process.wait()
+
+    if not terminated:
+        args = ['hapisetup-hapi-run']
+        kwargs = {'stdout': None, 'stderr': None}
+        # try:
+        hapi_run_process = Popen(args, cwd='/hapi', **kwargs)
+        current_process = hapi_run_process
+
+    if not terminated:
+        args = ['hapisetup-hapi-cli-install']
+        hapi_cli_install = Popen(args, cwd='/hapi', **kwargs)
+        current_process = hapi_cli_install
+        hapi_cli_install.wait()
+
+    if load and not terminated:
+        args = ['hapisetup-hapi-load', str(load_zip_dir), str(load_unzip_dir)]
+        hapi_load = Popen(args, cwd='/hapi', **kwargs)
+        current_process = hapi_load
+        hapi_load.wait()
+
+    hapi_run_process.wait()

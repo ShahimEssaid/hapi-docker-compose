@@ -12,6 +12,7 @@ services:
       memlock:
         soft: -1
         hard: -1
+    user: ${CW_UID:?err}:${CW_GID:?err}
 #    user: ${HS_UID:?err} #:${HS_GID:?err} to deal with keystore permissins when UID is not 1000. See: https://www.elastic.co/guide/en/elasticsearch/reference/7.13/docker.html#_configuration_files_must_be_readable_by_the_elasticsearch_user
     ports:
       - target: 9200

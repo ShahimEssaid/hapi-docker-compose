@@ -6,14 +6,16 @@ set -o pipefail
 set -o noclobber
 shopt -s nullglob
 
-if [[ ! -f hapi-cli/hapi-cli-v${HS_HAPI_VERSION}.zip ]]; then
+cd /hapi
+
+if [[ ! -f hapi-cli/hapi-cli-v${CW_HAPI_VERSION}.zip ]]; then
   mkdir -p "hapi-cli"
   wget --quiet \
-    --output-document "hapi-cli/hapi-cli-v${HS_HAPI_VERSION}.zip" \
-    "https://github.com/hapifhir/hapi-fhir/releases/download/v${HS_HAPI_VERSION}/hapi-fhir-${HS_HAPI_VERSION}-cli.zip"
+    --output-document "hapi-cli/hapi-cli-v${CW_HAPI_VERSION}.zip" \
+    "https://github.com/hapifhir/hapi-fhir/releases/download/v${CW_HAPI_VERSION}/hapi-fhir-${CW_HAPI_VERSION}-cli.zip"
 fi
 
-if [[ ! -f hapi-cli/v${HS_HAPI_VERSION}/hapi-fhir-cli.jar ]]; then
-  mkdir -p "hapi-cli/v${HS_HAPI_VERSION}"
-  unzip "hapi-cli/hapi-cli-v${HS_HAPI_VERSION}.zip" -d "hapi-cli/v${HS_HAPI_VERSION}"
+if [[ ! -f hapi-cli/v${CW_HAPI_VERSION}/hapi-fhir-cli.jar ]]; then
+  mkdir -p "hapi-cli/v${CW_HAPI_VERSION}"
+  unzip "hapi-cli/hapi-cli-v${CW_HAPI_VERSION}.zip" -d "hapi-cli/v${CW_HAPI_VERSION}"
 fi

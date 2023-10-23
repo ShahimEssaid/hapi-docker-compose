@@ -1,0 +1,3 @@
+services:
+  hapi:
+    command: [ 'run-hapi', '--load', '--load-zip-dir', "${CW_HAPI_LOAD_ZIP_DIR:?err}", '--load-unzip-dir',  "${CW_HAPI_LOAD_UNZIP_DIR:?err}" ]

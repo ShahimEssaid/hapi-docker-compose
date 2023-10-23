@@ -1,4 +1,5 @@
 import logging
+import os
 import signal
 import typing
 from os import environ
@@ -21,36 +22,62 @@ class Compose(ComposeBase):
         self.service_names: list[str] = []
         self.profile_names: list[str] = []
 
-        self.cli.command(name='compose',
-                         context_settings=dict(
-                             ignore_unknown_options=True,
-                             allow_extra_args=True),
-                         add_help_option=False)(self._run_compose)
-
         from hapisetup.service import Service
         self.services: dict[str, Service] = {}
         self.globals = {'compose': self,
                         'Compose': Compose,
                         'Service': Service}
 
+        self.cli.callback()(self._cli_callback)
+        self.cli.command(name='args')(self._cli_show_arg_vars)
+        self.cli.command(name='reset-all')(self.reset_all_with_globs)
+        self.cli.command(name='compose',
+                         context_settings=dict(
+                             ignore_unknown_options=True,
+                             allow_extra_args=True),
+                         add_help_option=False)(self._cli_run_compose)
+
+    def _cli_callback(self,
+                      current_uid: Annotated[bool, typer.Option()] = True,
+                      current_gid: Annotated[bool, typer.Option()] = True,
+                      uid: Annotated[str, typer.Option()] = None,
+                      gid: Annotated[str, typer.Option()] = None):
+        if uid:
+            self.vars['CW_UID'] = uid
+        else:
+            if current_uid:
+                self.vars['CW_UID'] = str(os.getuid())
+
+        if gid:
+            self.vars['CW_GID'] = gid
+        else:
+            if current_gid:
+                self.vars['CW_GID'] = str(os.getgid())
+
+    def _cli_show_arg_vars(self):
+        keys = list(self.vars.keys())
+        keys.sort()
+        for key in keys:
+            print(f'{key}: {self.vars[key]}')
+
     def get_all_compose_files(self) -> list[Path]:
-        files = list(self.compose_files)
+        files = list(self.compose_file_list)
         for s in self.services.values():
-            files.extend(s.compose_files)
+            files.extend(s.compose_file_list)
         return files
 
     def get_all_env_files(self) -> list[Path]:
-        files = list(self.env_files)
+        files = list(self.arg_file_list)
         for s in self.services.values():
-            files.extend(s.env_files)
+            files.extend(s.arg_file_list)
         return files
 
     def get_effective_env_vars(self) -> dict[str, str]:
 
         env_vars = dict()
-        env_vars.update(self.env_vars)
+        env_vars.update(self.vars)
         for service in self.services.values():
-            env_vars.update(service.env_vars)
+            env_vars.update(service.vars)
         # environment overrides
         env_vars.update(environ)
         key_list = list(env_vars.keys())
@@ -60,7 +87,12 @@ class Compose(ComposeBase):
         #     print(f'{item[0]}  -->  {item[1]}')
         return sorted_vars
 
-    def _run_compose(self, ctx: Annotated[typer.Context, typer.Argument()]):
+    def reset_all_with_globs(self):
+        for service in self.services.values():
+            service.reset_with_globs()
+        self.reset_with_globs()
+
+    def _cli_run_compose(self, ctx: Annotated[typer.Context, typer.Argument()]):
         compose_line = ['docker', 'compose', '--project-directory', self.path]
         kwargs = {'stdout': None, 'stderr': None}
         for f in self.get_all_compose_files():
@@ -87,28 +119,6 @@ class Compose(ComposeBase):
         popen.wait()
 
         return popen
-
-    def get_full_path(self, relative_path: typing.Union[str, Path]) -> Path:
-        if isinstance(relative_path, str):
-            relative_path = Path(relative_path)
-        relative_path.resolve()
-        if relative_path.is_absolute():
-            if relative_path.is_relative_to(self.path):
-                return relative_path
-            else:
-                raise ValueError(
-                    f'Relative path is absolute and outside compose while getting full path: {relative_path}')
-        else:
-            return self.path / relative_path
-
-    def get_relative_path(self, other_path: typing.Union[str, Path]) -> Path:
-        if isinstance(other_path, str):
-            other_path = Path(other_path)
-        other_path.resolve()
-        if other_path.is_absolute():
-            return other_path.relative_to(self.path)
-        else:
-            return other_path
 
     def hi(self, message: str):
         print(f' =========== hello {self} {message}')
@@ -170,8 +180,5 @@ class Compose(ComposeBase):
         for service in self.services.values():
             self.cli.add_typer(service.cli, name=service.name)
 
-        hello_typer = typer.Typer(rich_markup_mode="markdown")
 
-        hello_typer.command(name='hi')(self.hi)
 
-        self.cli.add_typer(hello_typer, name='hello')

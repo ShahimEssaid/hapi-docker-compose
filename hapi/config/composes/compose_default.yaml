@@ -8,6 +8,7 @@ services:
       - ${CW_HAPI_HOME}/config/envs/default.env
       - ${CW_HAPI_HOME}/config/envs/project.env
       - ${CW_HAPI_HOME}/config/envs/local.env
+    user: ${CW_UID:?err}:${CW_GID:?err}
     environment:
       PYTHONUNBUFFERED: yes
       CW_HAPI_SPRING_PROFILES: ${CW_HAPI_SPRING_PROFILES}
@@ -26,4 +27,4 @@ services:
         source: ${CW_HAPI_HOME:?err}/service/hapi-config
         target: /hapi/config
 
-    command: [ 'run-hapi']
+    command: [ 'run-hapi' ]

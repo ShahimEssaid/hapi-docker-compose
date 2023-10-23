@@ -8,9 +8,14 @@ shopt -s nullglob
 
 hapisetup-hapi-cli-install
 
-LOADERS_DIR=$(realpath "$1")
-export FHIR_API_BASE="http://hapi:${HS_HAPI_PORT}/fhir"
+ZIPS_DIR=$(realpath "$1")
+UNZIP_DIR=$(realpath "$2")
 
+export FHIR_API_BASE="http://hapi:${CW_HAPI_PORT}/fhir"
+HAPI_CLI="$(pwd)/hapi-cli/v${CW_HAPI_VERSION}/hapi-fhir-cli"
+export  HAPI_CLI
+
+# Wait for HAPI to be ready
 WAIT=0
 while true; do
   if ! curl --header "Content-Type: application/fhir+json" -f -L "${FHIR_API_BASE}/metadata" >/dev/null 2>&1; then
@@ -24,17 +29,25 @@ while true; do
     sleep 5
     WAIT=$((WAIT + 5))
   else
+    echo "Sleeping 30 seconds before proceeding with loading."
+    sleep 30
     break 2
   fi
 done
 
-HAPI_CLI="$(pwd)/hapi-cli/v${HS_HAPI_VERSION}/hapi-fhir-cli"
-export  HAPI_CLI
 
-cd "${LOADERS_DIR}"
-unzip -o "*.zip" || true
+cd "${ZIPS_DIR}"
 
-for d in $(find "${LOADERS_DIR}" -mindepth 1 -maxdepth 1 -type d | sort); do
+for zipfile in *.zip; do
+  zipbase=${zipfile%.zip}
+  if [[ ! -e "${UNZIP_DIR}/${zipbase}" ]]; then
+    unzip -o "$zipfile" -d "$UNZIP_DIR"
+  fi
+done
+
+cd "${UNZIP_DIR}"
+
+for d in $(find "${UNZIP_DIR}" -mindepth 1 -maxdepth 1 -type d | sort); do
 
   if [[ -d $d ]]; then
     if [[ $d == *.off ]]; then

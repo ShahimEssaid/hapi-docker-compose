@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#set -x
+set -e
+set -u
+set -o pipefail
+set -o noclobber
+
+# See: https://github.com/elastic/dockerfiles/blob/7.16/elasticsearch/bin/docker-entrypoint.sh
+# See: https://www.elastic.co/guide/en/elasticsearch/reference/7.16/docker.html
+# See: https://www.elastic.co/guide/en/elasticsearch/reference/7.16/docker.html#_configuration_files_must_be_readable_by_the_elasticsearch_user
+
+
+# See for elasticsearch user info: https://github.com/elastic/dockerfiles/blob/597c9bb744b1002c66e6bf18369d9d545acb861f/elasticsearch/Dockerfile#L97
+
+exec  /bin/tini --  /usr/local/bin/docker-entrypoint.sh "$@"
